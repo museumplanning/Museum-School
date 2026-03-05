@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In — Museum Planning LLC</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=Cormorant+Garamond:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root{
+  --cream:#f5f0e8;--dark:#1a1612;--charcoal:#2d2825;--panel:#211d19;
+  --gold:#b8963e;--gold-light:#d4af5a;--gold-dim:rgba(184,150,62,0.12);
+  --muted:#8a8078;--border:rgba(184,150,62,0.2);--error:#c0523a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--dark);color:var(--cream);font-family:'Cormorant Garamond',Georgia,serif;overflow:hidden;}
+
+#p5bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.45;}
+
+#login-wrap{
+  position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:2rem;
+}
+
+.login-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:3rem 2.8rem;
+  width:100%;max-width:420px;
+}
+
+.login-logo{
+  font-family:'DM Mono',monospace;font-size:0.6rem;
+  letter-spacing:0.25em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:2rem;display:block;
+}
+
+.login-title{
+  font-family:'Playfair Display',serif;font-size:2.2rem;
+  font-weight:400;line-height:1.15;margin-bottom:0.4rem;
+}
+.login-title em{font-style:italic;color:var(--gold);}
+
+.login-sub{
+  font-family:'DM Mono',monospace;font-size:0.58rem;
+  letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:2.5rem;
+}
+
+.form-row{margin-bottom:1.2rem;}
+.form-row label{
+  font-family:'DM Mono',monospace;font-size:0.55rem;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--muted);display:block;margin-bottom:0.4rem;
+}
+.form-row input{
+  width:100%;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);color:var(--cream);
+  font-family:'Cormorant Garamond',serif;font-size:1rem;
+  padding:0.75rem 0.9rem;outline:none;
+  transition:border-color 0.2s;
+}
+.form-row input:focus{border-color:var(--gold);}
+.form-row input::placeholder{color:var(--muted);}
+
+.error-msg{
+  font-family:'DM Mono',monospace;font-size:0.58rem;
+  letter-spacing:0.1em;color:var(--error);
+  margin-bottom:1rem;display:none;
+}
+.error-msg.visible{display:block;}
+
+.btn-login{
+  font-family:'DM Mono',monospace;font-size:0.68rem;
+  letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--dark);background:var(--gold);border:none;
+  padding:0.9rem;width:100%;cursor:pointer;
+  transition:background 0.2s;margin-top:0.4rem;
+}
+.btn-login:hover{background:var(--gold-light);}
+
+.login-divider{
+  border:none;border-top:1px solid var(--border);
+  margin:2rem 0;
+}
+
+.access-info{
+  font-family:'DM Mono',monospace;font-size:0.55rem;
+  letter-spacing:0.1em;color:var(--muted);
+  line-height:1.8;
+}
+.access-info a{color:var(--gold);text-decoration:none;}
+.access-info a:hover{text-decoration:underline;}
+
+/* roles */
+.role-tabs{display:flex;gap:0;margin-bottom:2rem;border:1px solid var(--border);}
+.role-tab{
+  flex:1;font-family:'DM Mono',monospace;font-size:0.58rem;
+  letter-spacing:0.15em;text-transform:uppercase;
+  padding:0.65rem;text-align:center;cursor:pointer;
+  color:var(--muted);background:transparent;border:none;
+  transition:all 0.2s;
+}
+.role-tab.active{color:var(--dark);background:var(--gold);}
+.role-tab:not(.active):hover{color:var(--cream);background:rgba(184,150,62,0.08);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.login-card{animation:fadeUp 0.6s ease forwards;}
+</style>
+</head>
+<body>
+
+<div id="p5bg"></div>
+
+<div id="login-wrap">
+  <div class="login-card">
+    <span class="login-logo">Museum Planning LLC &nbsp;/&nbsp; Museum School</span>
+
+    <h1 class="login-title">Welcome <em>back.</em></h1>
+    <p class="login-sub">Sign in to access your projects</p>
+
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="setRole('student',this)">Student</button>
+      <button class="role-tab" onclick="setRole('freelancer',this)">Freelancer</button>
+      <button class="role-tab" onclick="setRole('admin',this)">Admin</button>
+    </div>
+
+    <div class="form-row">
+      <label>Email Address</label>
+      <input type="email" id="inp-email" placeholder="you@example.com" autocomplete="email"/>
+    </div>
+    <div class="form-row">
+      <label>Password</label>
+      <input type="password" id="inp-password" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')attemptLogin()"/>
+    </div>
+
+    <div class="error-msg" id="error-msg">Incorrect email or password. Please try again.</div>
+
+    <button class="btn-login" onclick="attemptLogin()">Sign In →</button>
+
+    <hr class="login-divider"/>
+
+    <div class="access-info">
+      Museum School student? &nbsp;<a href="index.html">Apply for access →</a><br/>
+      Forgot your password? &nbsp;<a href="mailto:mark@museumplanning.com">Contact Mark →</a><br/><br/>
+      Access is granted after enrollment confirmation.<br/>
+      All project work is saved to your account.
+    </div>
+  </div>
+</div>
+
+<script>
+// ── P5 background ─────────────────────────────────────
+new p5(function(p){
+  let lines=[];
+  p.setup=function(){
+    let c=p.createCanvas(p.windowWidth,p.windowHeight);
+    c.parent('p5bg');
+    for(let i=0;i<16;i++) lines.push({
+      x:p.random(p.width),y:p.random(p.height),
+      len:p.random(60,200),angle:p.random(p.TWO_PI),
+      speed:p.random(0.0002,0.0008),
+      weight:p.random(0.3,1.1),alpha:p.random(18,50)
+    });
+  };
+  p.draw=function(){
+    p.clear();
+    for(let l of lines){
+      l.angle+=l.speed;
+      let x2=l.x+Math.cos(l.angle)*l.len,y2=l.y+Math.sin(l.angle)*l.len;
+      p.stroke(184,150,62,l.alpha);p.strokeWeight(l.weight);
+      p.line(l.x,l.y,x2,y2);
+      p.fill(184,150,62,l.alpha*0.5);p.noStroke();
+      p.ellipse(l.x,l.y,2,2);p.noFill();
+    }
+  };
+  p.windowResized=function(){p.resizeCanvas(p.windowWidth,p.windowHeight);};
+});
+
+let currentRole = 'student';
+
+function setRole(role, el){
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Credentials ───────────────────────────────────────
+// Simple client-side gate — replace with real auth when backend is ready
+const USERS = [
+  { email:'mark@museumplanning.com', password:'museumplanning2026', role:'admin',      redirect:'dashboard.html' },
+  { email:'admin@museumplanning.com', password:'mplAdmin2026',       role:'admin',      redirect:'dashboard.html' },
+  { email:'student@test.com',         password:'student2026',         role:'student',    redirect:'dashboard.html' },
+  { email:'freelancer@test.com',      password:'freelancer2026',      role:'freelancer', redirect:'dashboard.html' },
+];
+
+function attemptLogin(){
+  const email    = document.getElementById('inp-email').value.trim().toLowerCase();
+  const password = document.getElementById('inp-password').value;
+  const errEl    = document.getElementById('error-msg');
+
+  const user = USERS.find(u => u.email === email && u.password === password);
+
+  if(user){
+    errEl.classList.remove('visible');
+    // Store session
+    sessionStorage.setItem('mpl_user', JSON.stringify({ email: user.email, role: user.role }));
+    window.location.href = user.redirect;
+  } else {
+    errEl.classList.add('visible');
+    document.getElementById('inp-password').value = '';
+    document.getElementById('inp-password').focus();
+  }
+}
+</script>
+</body>
+</html>
