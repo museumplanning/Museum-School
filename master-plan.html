@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Museum Master Plan — Museum Planning LLC</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=Cormorant+Garamond:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<style>
+:root {
+  --cream: #f5f0e8;
+  --dark: #1a1612;
+  --charcoal: #2d2825;
+  --panel: #211d19;
+  --gold: #b8963e;
+  --gold-light: #d4af5a;
+  --gold-dim: rgba(184,150,62,0.15);
+  --muted: #8a8078;
+  --border: rgba(184,150,62,0.2);
+  --success: #4a8c5c;
+  --sidebar: 280px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--dark);color:var(--cream);font-family:'Cormorant Garamond',Georgia,serif;}
+
+/* ── P5 canvas ── */
+#p5bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.4;}
+
+/* ── LAYOUT ── */
+#app{position:relative;z-index:1;display:grid;grid-template-rows:56px 1fr;grid-template-columns:var(--sidebar) 1fr;height:100vh;}
+
+/* ── TOP BAR ── */
+#topbar{
+  grid-column:1/-1;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.5rem;
+  border-bottom:1px solid var(--border);
+  background:rgba(26,22,18,0.92);
+  backdrop-filter:blur(10px);
+}
+.topbar-left{display:flex;align-items:center;gap:1rem;}
+.logo-text{font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;}
+.topbar-divider{width:1px;height:18px;background:var(--border);}
+#museum-name-display{font-family:'Playfair Display',serif;font-size:1rem;color:var(--cream);}
+.topbar-right{display:flex;align-items:center;gap:1rem;}
+.progress-label{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;color:var(--muted);}
+.progress-bar-wrap{width:120px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;}
+.progress-bar-fill{height:100%;background:var(--gold);border-radius:2px;transition:width 0.5s ease;}
+.btn-export{
+  font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--dark);background:var(--gold);border:none;padding:0.4rem 1rem;cursor:pointer;
+  transition:background 0.2s;
+}
+.btn-export:hover{background:var(--gold-light);}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+}
+.sidebar-museum{padding:1.2rem 1.2rem 0.8rem;}
+.sidebar-museum-label{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;margin-bottom:0.5rem;}
+.museum-badge{
+  background:var(--gold-dim);border:1px solid var(--border);
+  padding:0.7rem 0.8rem;
+}
+.museum-badge-name{font-family:'Playfair Display',serif;font-size:0.95rem;display:block;margin-bottom:0.2rem;}
+.museum-badge-meta{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;color:var(--muted);}
+
+.sidebar-phases{padding:1rem 0;}
+.phase-nav-item{
+  padding:0.8rem 1.2rem;
+  cursor:pointer;
+  border-left:2px solid transparent;
+  transition:all 0.2s;
+  display:flex;align-items:flex-start;gap:0.8rem;
+}
+.phase-nav-item:hover{background:rgba(184,150,62,0.05);}
+.phase-nav-item.active{border-left-color:var(--gold);background:rgba(184,150,62,0.08);}
+.phase-nav-item.completed{border-left-color:var(--success);}
+.phase-num{
+  font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.15em;color:var(--gold);
+  margin-top:0.15rem;flex-shrink:0;
+}
+.phase-nav-item.completed .phase-num{color:var(--success);}
+.phase-nav-title{font-size:0.95rem;font-weight:600;display:block;margin-bottom:0.1rem;}
+.phase-nav-sub{font-family:'DM Mono',monospace;font-size:0.55rem;color:var(--muted);letter-spacing:0.08em;}
+.phase-check-row{
+  display:flex;align-items:center;gap:0.4rem;
+  padding:0.15rem 1.2rem 0.15rem 3.3rem;
+}
+.mini-check{
+  width:10px;height:10px;border-radius:50%;
+  border:1px solid var(--border);flex-shrink:0;
+  transition:background 0.2s,border-color 0.2s;
+}
+.mini-check.done{background:var(--success);border-color:var(--success);}
+.mini-check.active-step{background:var(--gold);border-color:var(--gold);}
+.phase-check-label{font-family:'DM Mono',monospace;font-size:0.5rem;letter-spacing:0.05em;color:var(--muted);}
+
+.sidebar-footer{margin-top:auto;padding:1rem 1.2rem;border-top:1px solid var(--border);}
+.sidebar-footer-text{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;color:var(--muted);line-height:1.6;}
+
+/* ── MAIN AREA ── */
+#main{overflow:hidden;display:flex;flex-direction:column;}
+
+/* ── SETUP CARD — always at top ── */
+#setup-screen{
+  padding:1.5rem 2rem;
+  border-bottom:1px solid var(--border);
+  background:rgba(26,22,18,0.6);
+  backdrop-filter:blur(6px);
+  flex-shrink:0;
+}
+.setup-card{
+  max-width:900px;width:100%;
+}
+.setup-card-top{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;margin-bottom:1.2rem;
+}
+.setup-titles{}
+.setup-title{font-family:'Playfair Display',serif;font-size:1.5rem;margin-bottom:0.1rem;line-height:1.2;}
+.setup-title em{font-style:italic;color:var(--gold);}
+.setup-sub{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;}
+.setup-fields{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:0.7rem;align-items:end;}
+.setup-fields-row2{display:grid;grid-template-columns:1fr 1fr auto;gap:0.7rem;align-items:end;margin-top:0.7rem;}
+
+.form-row{margin-bottom:0;}
+.form-row label{font-family:'DM Mono',monospace;font-size:0.52rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:0.3rem;}
+.form-row input,.form-row select,.form-row textarea{
+  width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:0.9rem;
+  padding:0.5rem 0.7rem;outline:none;transition:border-color 0.2s;
+  appearance:none;
+}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--gold);}
+.form-row select option{background:var(--charcoal);}
+.form-row textarea{resize:vertical;min-height:50px;font-size:0.85rem;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.btn-start{
+  font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--dark);background:var(--gold);border:none;padding:0.6rem 1.4rem;
+  cursor:pointer;white-space:nowrap;transition:background 0.2s;height:100%;
+}
+.btn-start:hover{background:var(--gold-light);}
+
+/* ── PHASE CONTENT ── */
+#phase-content{display:none;flex-direction:column;padding:1.5rem 2rem;}
+.phase-header{margin-bottom:1.5rem;}
+.phase-eyebrow{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:0.4rem;}
+.phase-title{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:400;}
+.phase-title em{font-style:italic;color:var(--gold);}
+.phase-desc{font-size:1rem;color:rgba(245,240,232,0.65);margin-top:0.4rem;line-height:1.6;}
+.week-badge{
+  display:inline-block;font-family:'DM Mono',monospace;font-size:0.55rem;
+  letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--border);padding:0.25rem 0.7rem;margin-top:0.6rem;
+}
+
+/* ── CHECKLIST ITEMS ── */
+.checklist-item{
+  border:1px solid var(--border);margin-bottom:0.8rem;
+  transition:border-color 0.2s;
+  background:rgba(26,22,18,0.5);
+}
+.checklist-item.item-active{border-color:var(--gold);}
+.checklist-item.item-done{border-color:var(--success);opacity:0.75;}
+.item-header{
+  display:grid;grid-template-columns:44px 1fr auto;
+  align-items:center;gap:0.8rem;padding:0.9rem 1rem;
+  cursor:pointer;
+}
+.item-number{
+  font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;
+  color:var(--gold);text-align:center;
+}
+.item-done .item-number{color:var(--success);}
+.item-title-wrap{}
+.item-title{font-size:1.05rem;font-weight:600;display:block;}
+.item-subtitle{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.08em;color:var(--muted);}
+.item-status{display:flex;align-items:center;gap:0.5rem;}
+.status-dot{width:8px;height:8px;border-radius:50%;border:1px solid var(--border);}
+.item-active .status-dot{background:var(--gold);border-color:var(--gold);}
+.item-done .status-dot{background:var(--success);border-color:var(--success);}
+.status-text{font-family:'DM Mono',monospace;font-size:0.5rem;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
+.item-chevron{font-size:0.7rem;color:var(--muted);transition:transform 0.2s;}
+.item-expanded .item-chevron{transform:rotate(180deg);}
+
+.item-body{display:none;padding:0 1rem 1rem;border-top:1px solid var(--border);}
+.item-expanded .item-body{display:block;}
+.item-description{font-size:0.95rem;color:rgba(245,240,232,0.7);line-height:1.7;margin:0.8rem 0;}
+.item-owner-row{
+  display:flex;gap:1.5rem;margin-bottom:0.8rem;
+  font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;
+}
+.item-owner span:first-child{color:var(--muted);}
+.item-owner span:last-child{color:var(--cream);}
+
+/* notes area */
+.notes-label{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+.notes-input{
+  width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:0.95rem;
+  padding:0.7rem 0.9rem;outline:none;resize:vertical;min-height:65px;
+  transition:border-color 0.2s;margin-bottom:0.8rem;
+}
+.notes-input:focus{border-color:var(--gold);}
+
+/* ai section */
+.ai-section{background:rgba(184,150,62,0.04);border:1px solid var(--border);padding:0.9rem;margin-bottom:0.8rem;}
+.ai-section-label{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem;display:flex;align-items:center;gap:0.5rem;}
+.ai-section-label::before{content:'✦';font-size:0.6rem;}
+.ai-output{
+  font-size:0.95rem;line-height:1.75;color:rgba(245,240,232,0.85);
+  white-space:pre-wrap;min-height:40px;
+}
+.ai-output.loading{color:var(--muted);font-style:italic;}
+.ai-output.empty{color:var(--muted);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;}
+
+.item-actions{display:flex;gap:0.7rem;flex-wrap:wrap;}
+.btn-ai{
+  font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--gold);background:transparent;border:1px solid var(--gold);
+  padding:0.55rem 1.1rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;
+}
+.btn-ai:hover{background:var(--gold-dim);}
+.btn-ai:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-complete{
+  font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--dark);background:var(--success);border:none;
+  padding:0.55rem 1.1rem;cursor:pointer;transition:background 0.2s;
+}
+.btn-complete:hover{background:#5aa870;}
+.btn-redo{
+  font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--muted);background:transparent;border:1px solid var(--border);
+  padding:0.55rem 0.8rem;cursor:pointer;transition:all 0.2s;margin-left:auto;
+}
+.btn-redo:hover{border-color:var(--muted);}
+
+/* phase nav footer */
+.phase-footer{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--border);
+}
+.btn-phase-nav{
+  font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;
+  padding:0.65rem 1.3rem;cursor:pointer;transition:all 0.2s;border:1px solid var(--border);
+  color:var(--cream);background:transparent;
+}
+.btn-phase-nav:hover{border-color:var(--gold);color:var(--gold);}
+.btn-phase-nav.primary{background:var(--gold);color:var(--dark);border-color:var(--gold);}
+.btn-phase-nav.primary:hover{background:var(--gold-light);}
+.btn-phase-nav:disabled{opacity:0.3;cursor:not-allowed;}
+.phase-progress-text{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--muted);}
+
+/* spinner */
+@keyframes spin{to{transform:rotate(360deg);}}
+.spinner{display:inline-block;width:10px;height:10px;border:1.5px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;}
+
+/* fade in */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.fade-in{animation:fadeIn 0.4s ease forwards;}
+
+/* ── SCROLL BODY — content below setup card ── */
+#scroll-body{overflow-y:auto;flex:1;display:flex;flex-direction:column;}
+
+.ref-guide{max-width:900px;width:100%;margin:3rem auto 5rem;padding:0 1rem;}
+.ref-section{margin-bottom:3.5rem;padding-bottom:3rem;border-bottom:1px solid var(--border);}
+.ref-section:last-child{border-bottom:none;}
+.ref-eyebrow{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem;}
+.ref-heading{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:400;margin-bottom:1rem;line-height:1.2;}
+.ref-heading em{font-style:italic;color:var(--gold);}
+.ref-body{font-size:1rem;color:rgba(245,240,232,0.72);line-height:1.75;}
+.ref-list{list-style:none;margin:0.6rem 0;padding:0;}
+.ref-list li{font-size:0.95rem;color:rgba(245,240,232,0.7);padding:0.4rem 0 0.4rem 1.4rem;border-bottom:1px solid rgba(184,150,62,0.08);position:relative;line-height:1.55;}
+.ref-list li::before{content:'—';position:absolute;left:0;color:var(--gold);}
+.ref-callout{background:rgba(184,150,62,0.06);border-left:3px solid var(--gold);padding:0.9rem 1.2rem;margin-top:1.2rem;}
+.ref-callout-label{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:0.4rem;}
+.ref-callout p{font-size:0.95rem;color:rgba(245,240,232,0.75);line-height:1.65;}
+.ref-phase-block{margin-bottom:1.5rem;}
+.ref-phase-label{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);padding:0.6rem 0;margin-bottom:0.5rem;border-bottom:1px solid var(--border);}
+.ref-table-wrap{overflow-x:auto;}
+.ref-table{width:100%;border-collapse:collapse;font-size:0.88rem;}
+.ref-table th{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.15em;text-transform:uppercase;background:rgba(184,150,62,0.12);color:var(--gold);padding:0.6rem 0.8rem;text-align:left;border:1px solid var(--border);}
+.ref-table td{padding:0.65rem 0.8rem;border:1px solid var(--border);color:rgba(245,240,232,0.75);vertical-align:top;line-height:1.55;}
+.ref-table td strong{color:var(--cream);display:block;margin-bottom:0.2rem;}
+.ref-table tr:nth-child(even) td{background:rgba(255,255,255,0.02);}
+.ref-phase-cell{color:var(--gold)!important;font-family:'DM Mono',monospace;font-size:0.7rem!important;letter-spacing:0.1em;font-weight:bold;white-space:nowrap;}
+.ref-table-checklist td:first-child{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--gold)!important;white-space:nowrap;width:3rem;}
+.ref-two-col{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1.2rem;}
+.ref-sub-label{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--success);margin-bottom:0.5rem;}
+.ref-sub-label-no{color:#c0523a;}
+.ref-prompt-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.ref-prompt-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);padding:1rem 1.1rem;}
+.ref-prompt-title{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem;}
+.ref-prompt-card p{font-size:0.85rem;color:rgba(245,240,232,0.6);line-height:1.65;font-style:italic;}
+.ref-standards-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.2rem;margin-bottom:1.2rem;}
+.ref-standard-block{background:rgba(255,255,255,0.02);border:1px solid var(--border);padding:1.1rem;}
+.ref-standard-title{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:0.7rem;}
+@media(max-width:700px){
+  .ref-two-col,.ref-prompt-grid,.ref-standards-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="p5bg"></div>
+
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="topbar-left">
+      <span class="logo-text">Museum Planning LLC</span>
+      <div class="topbar-divider"></div>
+      <span id="museum-name-display">Museum Master Plan</span>
+    </div>
+    <div class="topbar-right">
+      <span class="progress-label">Overall Progress</span>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <button class="btn-export" onclick="exportSummary()">Export Summary</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-museum" id="sidebar-museum-block" style="display:none">
+      <div class="sidebar-museum-label">Active Project</div>
+      <div class="museum-badge">
+        <span class="museum-badge-name" id="sb-museum-name">—</span>
+        <span class="museum-badge-meta" id="sb-museum-meta">—</span>
+      </div>
+    </div>
+
+    <div class="sidebar-phases" id="sidebar-phases"></div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-text">
+        Museum Planning LLC<br>
+        Strategic Plan Workflow v1.0<br><br>
+        AI assistance at every step.<br>
+        Your judgment closes the plan.
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- SETUP CARD — always visible at top -->
+    <div id="setup-screen">
+      <div class="setup-card">
+        <div class="setup-card-top">
+          <div class="setup-titles">
+            <h1 class="setup-title">Museum <em>Master Plan</em></h1>
+            <p class="setup-sub">Start a new engagement or continue an existing project</p>
+          </div>
+        </div>
+        <div class="setup-fields">
+          <div class="form-row">
+            <label>Museum Name</label>
+            <input type="text" id="inp-name" placeholder="e.g. Riverside Children's Museum"/>
+          </div>
+          <div class="form-row">
+            <label>Museum Type</label>
+            <select id="inp-type">
+              <option value="">Type...</option>
+              <option>Children's Museum</option>
+              <option>Art Museum</option>
+              <option>History Museum</option>
+              <option>Science Center</option>
+              <option>Natural History Museum</option>
+              <option>Aquarium</option>
+              <option>Zoo</option>
+              <option>Botanical Garden</option>
+              <option>Community Museum</option>
+              <option>Visitor Center</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Location</label>
+            <input type="text" id="inp-location" placeholder="City, State"/>
+          </div>
+          <div class="form-row">
+            <label>Annual Budget</label>
+            <select id="inp-budget">
+              <option value="">Budget...</option>
+              <option>Under $250K</option>
+              <option>$250K – $1M</option>
+              <option>$1M – $5M</option>
+              <option>$5M – $20M</option>
+              <option>Over $20M</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Staff Size</label>
+            <select id="inp-staff">
+              <option value="">Staff...</option>
+              <option>1–5 staff</option>
+              <option>6–15 staff</option>
+              <option>16–50 staff</option>
+              <option>51–150 staff</option>
+              <option>150+ staff</option>
+            </select>
+          </div>
+        </div>
+        <div class="setup-fields-row2">
+          <div class="form-row">
+            <label>Vitality / Key Context (optional)</label>
+            <input type="text" id="inp-vitality" placeholder="Known challenges, strengths, or vitality index notes..."/>
+          </div>
+          <div class="form-row">
+            <label>Assigned To</label>
+            <input type="text" id="inp-assignee" placeholder="Student or consultant name"/>
+          </div>
+          <div class="form-row">
+            <label>&nbsp;</label>
+            <button class="btn-start" onclick="startProject()">Begin Strategic Plan →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCROLLABLE BODY -->
+    <div id="scroll-body">
+
+      <!-- REFERENCE GUIDE -->
+      <div class="ref-guide fade-in">
+
+        <div class="ref-section">
+          <div class="ref-eyebrow">Overview</div>
+          <h2 class="ref-heading">What is a Museum <em>Strategic Plan?</em></h2>
+          <p class="ref-body">A Museum Strategic Plan is a 3–5 year roadmap that defines where the museum is going, why, and how it will get there. It aligns the board, staff, and community around shared goals and provides a framework for making decisions about programs, resources, and priorities.</p>
+          <p class="ref-body" style="margin-top:0.8rem;">A completed strategic plan typically includes:</p>
+          <ul class="ref-list">
+            <li>An updated or affirmed mission, vision, and values statement</li>
+            <li>An environmental scan (internal strengths/weaknesses, external opportunities/threats)</li>
+            <li>3–5 strategic priorities or pillars</li>
+            <li>Goals and objectives under each priority</li>
+            <li>An implementation matrix with owners, timelines, and metrics</li>
+            <li>A financial sustainability component</li>
+          </ul>
+          <div class="ref-callout">
+            <div class="ref-callout-label">Typical Engagement Length</div>
+            <p>A strategic planning process usually takes 4–6 months from kickoff to final document. Budget 80–120 hours of consultant time depending on museum size and complexity.</p>
+          </div>
+        </div>
+
+        <div class="ref-section">
+          <div class="ref-eyebrow">Project Phases at a Glance</div>
+          <h2 class="ref-heading">Four Phases. <em>Eighteen Weeks.</em></h2>
+          <div class="ref-table-wrap">
+            <table class="ref-table">
+              <thead><tr><th>Phase</th><th>Name</th><th>Key Activities</th><th>Timing</th></tr></thead>
+              <tbody>
+                <tr><td class="ref-phase-cell">Phase 1</td><td>Discovery &amp; Assessment</td><td>Stakeholder interviews, document review, surveys, environmental scan</td><td>Weeks 1–5</td></tr>
+                <tr><td class="ref-phase-cell">Phase 2</td><td>Strategic Priorities</td><td>Board retreat, staff workshop, draft pillars and goals</td><td>Weeks 6–10</td></tr>
+                <tr><td class="ref-phase-cell">Phase 3</td><td>Document Drafting</td><td>Write full plan, implementation matrix, review cycles</td><td>Weeks 11–15</td></tr>
+                <tr><td class="ref-phase-cell">Phase 4</td><td>Approval &amp; Launch</td><td>Board approval, communication plan, public release</td><td>Weeks 16–18</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="ref-section">
+          <div class="ref-eyebrow">Master Project Checklist</div>
+          <h2 class="ref-heading">All 26 Steps. <em>In Order.</em></h2>
+          <p class="ref-body" style="margin-bottom:1.2rem;">Work through each item in order. Do not advance to the next phase until all items in the current phase are complete and confirmed with the client.</p>
+          <div class="ref-phase-block">
+            <div class="ref-phase-label">Phase 1 — Discovery &amp; Assessment</div>
+            <div class="ref-table-wrap"><table class="ref-table ref-table-checklist">
+              <thead><tr><th>#</th><th>Task</th><th>Owner</th><th>Timing</th></tr></thead>
+              <tbody>
+                <tr><td>1.1</td><td><strong>Project Kickoff Meeting</strong>Schedule 90-min call with ED, board chair, and key staff. Confirm scope, timeline, and communication plan.</td><td>Freelancer + Mark</td><td>Week 1</td></tr>
+                <tr><td>1.2</td><td><strong>Document Collection</strong>Request and review: existing strategic plan, bylaws, financials (3 yrs), annual reports, org chart, staff handbook.</td><td>Freelancer</td><td>Week 1</td></tr>
+                <tr><td>1.3</td><td><strong>Stakeholder Interview List</strong>Work with ED to identify 15–25 stakeholders: board, staff, community leaders, funders, visitors.</td><td>Freelancer + ED</td><td>Week 1–2</td></tr>
+                <tr><td>1.4</td><td><strong>Interview Guide</strong>Prepare 8–10 open-ended questions. Use AI to draft; review with Mark before use.</td><td>Freelancer (AI-assisted)</td><td>Week 2</td></tr>
+                <tr><td>1.5</td><td><strong>Conduct Stakeholder Interviews</strong>Complete all interviews. Record with permission or take detailed notes. Aim for 45–60 min each.</td><td>Freelancer</td><td>Week 2–4</td></tr>
+                <tr><td>1.6</td><td><strong>Community/Visitor Survey</strong>Design 10–15 question survey. Distribute via email and on-site. Minimum 50 responses.</td><td>Freelancer</td><td>Week 2–4</td></tr>
+                <tr><td>1.7</td><td><strong>Environmental Scan (SWOT)</strong>Synthesize interview and survey data into Strengths, Weaknesses, Opportunities, Threats document.</td><td>Freelancer (AI-assisted)</td><td>Week 4–5</td></tr>
+                <tr><td>1.8</td><td><strong>Peer Institution Benchmarking</strong>Identify 3–5 comparable museums. Review their public strategic plans and programs.</td><td>Freelancer</td><td>Week 4–5</td></tr>
+                <tr><td>1.9</td><td><strong>Phase 1 Summary Report</strong>2–4 page document summarizing findings. Share with client for review and approval before Phase 2.</td><td>Freelancer</td><td>Week 5</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+          <div class="ref-phase-block">
+            <div class="ref-phase-label">Phase 2 — Strategic Priorities</div>
+            <div class="ref-table-wrap"><table class="ref-table ref-table-checklist">
+              <thead><tr><th>#</th><th>Task</th><th>Owner</th><th>Timing</th></tr></thead>
+              <tbody>
+                <tr><td>2.1</td><td><strong>Mission/Vision Review Workshop</strong>Facilitate 2-hr session with board and staff to affirm or update mission, vision, values.</td><td>Freelancer + Mark (optional)</td><td>Week 6</td></tr>
+                <tr><td>2.2</td><td><strong>Strategic Priorities Workshop</strong>Half-day board retreat. Present Phase 1 findings. Facilitate identification of 3–5 strategic pillars.</td><td>Freelancer + Mark</td><td>Week 7–8</td></tr>
+                <tr><td>2.3</td><td><strong>Draft Strategic Pillars</strong>Synthesize workshop output into clear priority statements with 2–3 sentence rationale each.</td><td>Freelancer (AI-assisted)</td><td>Week 8</td></tr>
+                <tr><td>2.4</td><td><strong>Goals &amp; Objectives Development</strong>For each pillar: 2–4 goals; for each goal: 2–3 measurable objectives. Use SMART framework.</td><td>Freelancer (AI-assisted)</td><td>Week 9</td></tr>
+                <tr><td>2.5</td><td><strong>Staff Validation Session</strong>Share draft pillars and goals with full staff. Collect feedback. Adjust as needed.</td><td>Freelancer</td><td>Week 9–10</td></tr>
+                <tr><td>2.6</td><td><strong>Phase 2 Summary Sign-Off</strong>Client reviews and approves strategic priorities before drafting begins.</td><td>Client + Freelancer</td><td>Week 10</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+          <div class="ref-phase-block">
+            <div class="ref-phase-label">Phase 3 — Document Drafting</div>
+            <div class="ref-table-wrap"><table class="ref-table ref-table-checklist">
+              <thead><tr><th>#</th><th>Task</th><th>Owner</th><th>Timing</th></tr></thead>
+              <tbody>
+                <tr><td>3.1</td><td><strong>Full Plan Draft — Version 1</strong>Write complete strategic plan document using approved template. All sections. Use AI writing assistant.</td><td>Freelancer (AI-assisted)</td><td>Week 11–12</td></tr>
+                <tr><td>3.2</td><td><strong>Implementation Matrix</strong>Build the action matrix: each objective gets an owner, timeline (Y1/Y2/Y3), budget estimate, and success metric.</td><td>Freelancer (AI-assisted)</td><td>Week 12</td></tr>
+                <tr><td>3.3</td><td><strong>Financial Sustainability Section</strong>Summarize current revenue mix. Identify diversification strategies. Tie to strategic priorities.</td><td>Freelancer</td><td>Week 12</td></tr>
+                <tr><td>3.4</td><td><strong>Client Review — Draft 1</strong>Share with ED and board chair. Allow 10 business days for review. Compile all edits.</td><td>Client</td><td>Week 13</td></tr>
+                <tr><td>3.5</td><td><strong>Revision — Version 2</strong>Incorporate feedback. Resolve conflicting edits with Mark if needed.</td><td>Freelancer</td><td>Week 14</td></tr>
+                <tr><td>3.6</td><td><strong>Final Proofread &amp; Design</strong>Proofread for grammar and consistency. Apply Museum Planning LLC report template.</td><td>Freelancer</td><td>Week 14–15</td></tr>
+                <tr><td>3.7</td><td><strong>Client Review — Final Draft</strong>Final review with board before approval vote.</td><td>Client</td><td>Week 15</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+          <div class="ref-phase-block">
+            <div class="ref-phase-label">Phase 4 — Approval &amp; Launch</div>
+            <div class="ref-table-wrap"><table class="ref-table ref-table-checklist">
+              <thead><tr><th>#</th><th>Task</th><th>Owner</th><th>Timing</th></tr></thead>
+              <tbody>
+                <tr><td>4.1</td><td><strong>Board Approval</strong>Present to full board for formal vote. Attend meeting or prepare presentation for client to deliver.</td><td>Client + Freelancer</td><td>Week 16</td></tr>
+                <tr><td>4.2</td><td><strong>Executive Summary (1 pager)</strong>Create a public-facing one-page summary of the approved plan.</td><td>Freelancer (AI-assisted)</td><td>Week 16</td></tr>
+                <tr><td>4.3</td><td><strong>Communication Plan</strong>Draft internal memo to staff + external announcement (press release or website update).</td><td>Freelancer (AI-assisted)</td><td>Week 17</td></tr>
+                <tr><td>4.4</td><td><strong>Final File Delivery</strong>Deliver: editable Word doc, final PDF, implementation matrix (Excel), all supporting research.</td><td>Freelancer</td><td>Week 17</td></tr>
+                <tr><td>4.5</td><td><strong>Project Closeout Call</strong>30-min debrief with client. Confirm satisfaction. Discuss annual check-in or Year 1 support.</td><td>Freelancer + Mark</td><td>Week 18</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <div class="ref-section">
+          <div class="ref-eyebrow">Final Deliverables</div>
+          <h2 class="ref-heading">What Gets <em>Delivered.</em></h2>
+          <p class="ref-body" style="margin-bottom:1.2rem;">Every Museum Strategic Plan engagement must produce the following deliverables. Do not close the project until all are complete and delivered.</p>
+          <div class="ref-table-wrap"><table class="ref-table">
+            <thead><tr><th>Deliverable</th><th>Description</th><th>Format</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Strategic Plan Document</strong></td><td>Full 15–25 page plan with all sections complete</td><td>Word + PDF</td></tr>
+              <tr><td><strong>Executive Summary</strong></td><td>1-page public-facing summary of the plan</td><td>Word + PDF</td></tr>
+              <tr><td><strong>Implementation Matrix</strong></td><td>All objectives with owners, timelines, metrics, budgets</td><td>Excel</td></tr>
+              <tr><td><strong>Environmental Scan / SWOT</strong></td><td>Summary of findings from Discovery phase</td><td>Word or PDF</td></tr>
+              <tr><td><strong>Stakeholder Interview Summary</strong></td><td>Anonymized synthesis of interview themes</td><td>Word or PDF</td></tr>
+              <tr><td><strong>Survey Results</strong></td><td>Raw data + analysis summary</td><td>Excel + PDF</td></tr>
+              <tr><td><strong>Communication Plan</strong></td><td>Internal and external messaging for launch</td><td>Word</td></tr>
+              <tr><td><strong>Project Archive</strong></td><td>All working files, notes, and source documents</td><td>Folder / Drive</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+
+        <div class="ref-section">
+          <div class="ref-eyebrow">AI Assistant</div>
+          <h2 class="ref-heading">How to Use <em>the AI.</em></h2>
+          <p class="ref-body">The Museum Planning LLC AI assistant is trained on museum planning standards and Mark Walhimer's methodologies. Use it at each stage — but always review its output before sending anything to a client.</p>
+          <div class="ref-callout">
+            <div class="ref-callout-label">The Golden Rule</div>
+            <p>The AI drafts. You review. The client never knows the AI was involved unless you tell them.</p>
+          </div>
+          <div class="ref-two-col" style="margin-top:1.2rem;">
+            <div>
+              <div class="ref-sub-label">✓ Use the AI For</div>
+              <ul class="ref-list">
+                <li>Drafting interview guides and survey questions</li>
+                <li>Synthesizing interview notes into themes</li>
+                <li>Writing the environmental scan / SWOT narrative</li>
+                <li>Drafting strategic pillar statements and rationale</li>
+                <li>Writing SMART goals and objectives from workshop notes</li>
+                <li>Drafting full plan sections from your structured notes</li>
+                <li>Building the implementation matrix from a list of objectives</li>
+                <li>Writing executive summaries and communication memos</li>
+              </ul>
+            </div>
+            <div>
+              <div class="ref-sub-label ref-sub-label-no">✗ Do Not Use the AI For</div>
+              <ul class="ref-list">
+                <li>Making strategic decisions on behalf of the client</li>
+                <li>Fabricating quotes or stakeholder input</li>
+                <li>Replacing facilitation — workshops must be run by a human</li>
+                <li>Financial projections (use the client's actual data)</li>
+              </ul>
+            </div>
+          </div>
+          <div class="ref-sub-label" style="margin-top:1.8rem;margin-bottom:0.8rem;">Sample AI Prompts by Task</div>
+          <div class="ref-prompt-grid">
+            <div class="ref-prompt-card"><div class="ref-prompt-title">Interview Guide</div><p>I am conducting a strategic planning process for [museum name], a [type] museum in [city] with [budget/staff size]. Please draft 10 open-ended stakeholder interview questions that explore mission alignment, community relevance, internal capacity, and future opportunities.</p></div>
+            <div class="ref-prompt-card"><div class="ref-prompt-title">SWOT Synthesis</div><p>Below are notes from stakeholder interviews for [museum name]. Please synthesize into a SWOT analysis with 4–6 points per quadrant. Group similar themes. Do not attribute quotes to specific individuals. [Paste notes]</p></div>
+            <div class="ref-prompt-card"><div class="ref-prompt-title">Strategic Pillar Drafting</div><p>Based on the following SWOT analysis and workshop output, please draft 4 strategic priorities for a 3-year museum strategic plan. For each priority, write a 2–3 sentence rationale. [Paste SWOT + workshop notes]</p></div>
+            <div class="ref-prompt-card"><div class="ref-prompt-title">Goals &amp; Objectives</div><p>For the strategic priority '[Priority Name]', please draft 3 goals and 2–3 SMART objectives per goal. Frame them as action statements starting with a verb. Achievable within 3 years.</p></div>
+            <div class="ref-prompt-card"><div class="ref-prompt-title">Implementation Matrix</div><p>Convert the following objectives into an implementation matrix. For each: suggest a responsible party (by role), timeline (Year 1/2/3), success metric, and resource level (Low/Medium/High). [Paste objectives]</p></div>
+          </div>
+        </div>
+
+        <div class="ref-section">
+          <div class="ref-eyebrow">Standards</div>
+          <h2 class="ref-heading">Quality <em>Standards.</em></h2>
+          <p class="ref-body" style="margin-bottom:1.2rem;">Every deliverable must meet these standards before it leaves your hands. Mark reviews all final documents — but you are responsible for quality before it reaches him.</p>
+          <div class="ref-standards-grid">
+            <div class="ref-standard-block">
+              <div class="ref-standard-title">Document Standards</div>
+              <ul class="ref-list">
+                <li>Use the Museum Planning LLC report template — no exceptions</li>
+                <li>All documents must be proofread (zero spelling errors, consistent grammar)</li>
+                <li>Client name spelled consistently throughout</li>
+                <li>All data cited must have a source noted</li>
+                <li>Implementation matrix must have an owner for every objective</li>
+              </ul>
+            </div>
+            <div class="ref-standard-block">
+              <div class="ref-standard-title">Process Standards</div>
+              <ul class="ref-list">
+                <li>Never share a draft without Mark's approval on the first engagement</li>
+                <li>All client communication goes through you — copy Mark on key emails</li>
+                <li>Meeting notes sent to client within 48 hours of any workshop</li>
+                <li>Do not extend timelines without notifying Mark first</li>
+              </ul>
+            </div>
+            <div class="ref-standard-block">
+              <div class="ref-standard-title">Content Standards</div>
+              <ul class="ref-list">
+                <li>Mission: one sentence, present tense, no jargon</li>
+                <li>Vision: one sentence, aspirational, future-facing</li>
+                <li>Values: 4–6 words or short phrases with one-sentence descriptions</li>
+                <li>Strategic priorities: 3–5 only — more than 5 means hard choices weren't made</li>
+                <li>Goals: 2–4 per priority; Objectives: 2–3 per goal, SMART, start with a verb</li>
+                <li>Every objective must have an owner, timeline, and metric</li>
+              </ul>
+            </div>
+            <div class="ref-standard-block">
+              <div class="ref-standard-title">When to Escalate to Mark</div>
+              <ul class="ref-list">
+                <li>Client wants to change scope, timeline, or budget</li>
+                <li>Significant stakeholder conflict arises</li>
+                <li>Client is unhappy with a deliverable or process</li>
+                <li>Unsure how to handle a sensitive finding</li>
+                <li>Client asks you to recommend a specific strategic direction</li>
+                <li>Any media inquiries or public speaking requests</li>
+              </ul>
+            </div>
+          </div>
+          <div class="ref-callout">
+            <div class="ref-callout-label">AAM Alignment</div>
+            <p>Museum strategic plans should align with American Alliance of Museums standards. Reference the AAM's museum standards and best practices framework at aam-us.org.</p>
+          </div>
+          <div class="ref-callout" style="margin-top:0.8rem;">
+            <div class="ref-callout-label">Contact</div>
+            <p>Reach Mark at Museum Planning LLC via email or the project Slack channel. For urgent issues, text directly. Response within 24 hours on business days.</p>
+          </div>
+        </div>
+
+      </div><!-- /ref-guide -->
+    </div>
+
+    <!-- PHASE CONTENT -->
+    <div id="phase-content"></div>
+
+    </div><!-- /scroll-body -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── P5.JS BACKGROUND ──────────────────────────────────
+new p5(function(p){
+  let lines=[];
+  p.setup=function(){
+    let c=p.createCanvas(p.windowWidth,p.windowHeight);
+    c.parent('p5bg');
+    for(let i=0;i<14;i++) lines.push({
+      x:p.random(p.width),y:p.random(p.height),
+      len:p.random(50,180),angle:p.random(p.TWO_PI),
+      speed:p.random(0.0002,0.0007),
+      weight:p.random(0.3,1.0),alpha:p.random(15,45)
+    });
+  };
+  p.draw=function(){
+    p.clear();
+    for(let l of lines){
+      l.angle+=l.speed;
+      let x2=l.x+Math.cos(l.angle)*l.len, y2=l.y+Math.sin(l.angle)*l.len;
+      p.stroke(184,150,62,l.alpha); p.strokeWeight(l.weight);
+      p.line(l.x,l.y,x2,y2);
+      p.fill(184,150,62,l.alpha*0.5); p.noStroke();
+      p.ellipse(l.x,l.y,2,2); p.noFill();
+    }
+  };
+  p.windowResized=function(){p.resizeCanvas(p.windowWidth,p.windowHeight);};
+});
+
+// ── PROJECT DATA ──────────────────────────────────────
+let museum = {};
+let state  = { phase: 0, items: {} };
+
+
+const PHASES = [
+  {
+    id: 'assessment',
+    num: 'Phase 01',
+    title: 'Assessment & Analysis',
+    weeks: 'Weeks 1–4',
+    desc: 'A master plan begins with a comprehensive understanding of where the institution stands — its facilities, operations, collections, and community position — before any future vision is developed.',
+    items: [
+      { id:'1.1', title:'Project Kickoff', sub:'Align on scope, goals & timeline', owner:'Freelancer + Mark', timing:'Week 1', desc:'Meet with the ED, board chair, facilities director, and key department heads. Confirm master plan scope (campus-wide, single building, or collection focus), planning horizon (10–20 years), budget range, and decision-making process.', aiTask:'kickoff', aiLabel:'Generate Kickoff Agenda' },
+      { id:'1.2', title:'Facilities Assessment', sub:'Document the current physical state', owner:'Freelancer', timing:'Week 1–2', desc:'Conduct a systematic walkthrough of all museum spaces. Document: square footage by use type, building systems condition (HVAC, electrical, plumbing, roof), ADA compliance gaps, collections storage conditions, and deferred maintenance backlog. Use photographic documentation throughout.', aiTask:'facilities', aiLabel:'Generate Facilities Assessment Template' },
+      { id:'1.3', title:'Collections & Storage Review', sub:'Assess collections capacity and conditions', owner:'Freelancer + Registrar', timing:'Week 2', desc:'Review current collections storage capacity, environmental conditions, and growth projections. Assess gap between current storage and long-term collections needs. Document any conservation emergencies or critical storage deficiencies.', aiTask:'collections', aiLabel:'Draft Collections Assessment Framework' },
+      { id:'1.4', title:'Operational Analysis', sub:'How does the museum actually function?', owner:'Freelancer', timing:'Week 2–3', desc:'Map current operational workflows: visitor flow, staff circulation, collections movement, loading dock access, food service, security, and events. Identify operational pain points and inefficiencies that the master plan should address.', aiTask:'operations', aiLabel:'Draft Operational Analysis Framework' },
+      { id:'1.5', title:'Audience & Community Analysis', sub:'Who does the museum serve and could serve?', owner:'Freelancer (AI-assisted)', timing:'Week 3', desc:'Review attendance data, visitor demographics, community surveys, and school district partnerships. Map the geographic reach of current audiences. Identify underserved communities and potential growth audiences that should inform the master plan.', aiTask:'audience', aiLabel:'Draft Audience & Community Analysis' },
+      { id:'1.6', title:'Peer Institution Benchmarking', sub:'Learn from comparable museums', owner:'Freelancer', timing:'Week 3–4', desc:'Identify 3–5 comparable museums that have recently completed master plans or expansions. Review their scope, scale, costs, and outcomes. Extract lessons applicable to this institution.', aiTask:'benchmarking', aiLabel:'Draft Benchmarking Report' },
+      { id:'1.7', title:'Phase 1 Assessment Report', sub:'Document findings before visioning begins', owner:'Freelancer (AI-assisted)', timing:'Week 4', desc:'Compile all assessment findings into a comprehensive report. Present to board and senior staff for review and approval before the visioning phase begins. This document is the factual foundation of the master plan.', aiTask:'assessment-report', aiLabel:'Draft Assessment Report' },
+    ]
+  },
+  {
+    id: 'vision',
+    num: 'Phase 02',
+    title: 'Vision & Program',
+    weeks: 'Weeks 5–9',
+    desc: 'Define what the museum wants to become over the next 10–20 years, then translate that vision into a specific spatial and programmatic program that guides design.',
+    items: [
+      { id:'2.1', title:'Vision Workshop — Board', sub:'Define the 20-year aspiration', owner:'Freelancer + Mark', timing:'Week 5', desc:'Facilitate a half-day board workshop to establish the master plan vision: What does the museum aspire to be in 20 years? What communities will it serve? What will it be known for? Produce a draft vision statement and 3–5 planning principles.', aiTask:'vision-workshop', aiLabel:'Generate Board Vision Workshop Guide' },
+      { id:'2.2', title:'Vision Workshop — Staff & Community', sub:'Broaden the conversation', owner:'Freelancer', timing:'Week 6', desc:'Facilitate separate vision sessions with staff and with community stakeholders. Capture priorities, concerns, and aspirations from each group. Synthesize findings and note where they align or diverge from the board vision.', aiTask:'community-vision', aiLabel:'Generate Community Vision Session Guide' },
+      { id:'2.3', title:'Space Needs Program', sub:'Quantify the future square footage requirements', owner:'Freelancer (AI-assisted)', timing:'Week 7', desc:'Based on the vision and assessment findings, develop a detailed space needs program: each functional area, current square footage, projected future need, and rationale. This is the quantitative heart of the master plan.', aiTask:'space-program', aiLabel:'Draft Space Needs Program' },
+      { id:'2.4', title:'Site Analysis', sub:'Understand expansion possibilities', owner:'Freelancer', timing:'Week 7–8', desc:'Analyze the museum\'s site for expansion potential: adjacent parcels, zoning, setbacks, parking requirements, utility infrastructure, and historic preservation constraints. Identify 2–3 site development scenarios.', aiTask:'site-analysis', aiLabel:'Draft Site Analysis Summary' },
+      { id:'2.5', title:'Planning Scenarios', sub:'Develop 2–3 alternative futures', owner:'Freelancer (AI-assisted)', timing:'Week 8–9', desc:'Develop 2–3 distinct planning scenarios that address the space program in different ways: phased renovation, new construction, campus expansion, or a hybrid. For each: rough square footage, phasing logic, estimated cost range, and pros/cons.', aiTask:'scenarios', aiLabel:'Draft Planning Scenarios' },
+      { id:'2.6', title:'Preferred Scenario Selection', sub:'Board selects the master plan direction', owner:'Client + Freelancer', timing:'Week 9', desc:'Present scenarios to the board for a formal decision. Document the selected scenario and any modifications. This decision locks the planning direction for Phase 3.', aiTask:'scenario-selection', aiLabel:'Draft Scenario Presentation' },
+    ]
+  },
+  {
+    id: 'plan',
+    num: 'Phase 03',
+    title: 'Master Plan Development',
+    weeks: 'Weeks 10–16',
+    desc: 'Develop the selected scenario into a full master plan document with phasing strategy, cost estimates, and implementation framework.',
+    items: [
+      { id:'3.1', title:'Conceptual Design Development', sub:'Translate the scenario into spatial concepts', owner:'Freelancer', timing:'Week 10–11', desc:'Develop conceptual site and floor plan diagrams for the preferred scenario. Show how spaces relate, how visitors will circulate, where collections will be housed, and how expansion integrates with existing structure. Not architectural drawings — planning diagrams.', aiTask:'conceptual-design', aiLabel:'Draft Conceptual Design Narrative' },
+      { id:'3.2', title:'Phasing Strategy', sub:'How does the museum get there?', owner:'Freelancer (AI-assisted)', timing:'Week 11–12', desc:'Develop a phased implementation strategy. Each phase should be independently functional and fundable. Define phase boundaries, sequencing logic, interim operations plan, and estimated duration. Typically 3–5 phases over 10–20 years.', aiTask:'phasing', aiLabel:'Draft Phasing Strategy' },
+      { id:'3.3', title:'Cost Estimating', sub:'Rough order-of-magnitude costs by phase', owner:'Freelancer + Mark', timing:'Week 12–13', desc:'Develop ROM (rough order of magnitude) cost estimates for each phase using current construction cost benchmarks for comparable museum projects. Include construction, FF&E, technology, soft costs, and contingency. Clearly label as ROM estimates.', aiTask:'cost-estimate', aiLabel:'Draft Cost Estimating Framework' },
+      { id:'3.4', title:'Sustainability & Resilience Strategy', sub:'Build for the next 50 years', owner:'Freelancer (AI-assisted)', timing:'Week 13', desc:'Integrate sustainability and resilience considerations into the master plan: energy efficiency targets, renewable energy potential, stormwater management, climate resilience, and green certification goals. These should be embedded in each phase, not added as an afterthought.', aiTask:'sustainability', aiLabel:'Draft Sustainability Strategy' },
+      { id:'3.5', title:'Financial Feasibility Analysis', sub:'Can the museum actually do this?', owner:'Freelancer', timing:'Week 13–14', desc:'Assess the financial feasibility of the master plan: current endowment and reserves, fundraising capacity, potential grants, naming opportunities, earned revenue impact of expansion, and operating cost implications of new space.', aiTask:'financial', aiLabel:'Draft Financial Feasibility Framework' },
+      { id:'3.6', title:'Master Plan Document Draft', sub:'Write the full plan', owner:'Freelancer (AI-assisted)', timing:'Week 14–15', desc:'Write the complete master plan document. All sections: executive summary, assessment findings, vision and principles, space program, preferred scenario, phasing strategy, cost estimates, sustainability approach, and financial framework.', aiTask:'full-draft', aiLabel:'Draft Master Plan Document' },
+      { id:'3.7', title:'Client Review & Revision', sub:'Board review and approval', owner:'Client + Freelancer', timing:'Week 15–16', desc:'Present the draft master plan to the full board. Allow time for questions and revisions. Incorporate feedback and produce the final approved document.', aiTask:'review', aiLabel:'Draft Board Presentation Outline' },
+    ]
+  },
+  {
+    id: 'implementation',
+    num: 'Phase 04',
+    title: 'Implementation Planning',
+    weeks: 'Weeks 17–20',
+    desc: 'A master plan without an implementation roadmap stays on the shelf. This phase turns the plan into actionable next steps the museum can begin immediately.',
+    items: [
+      { id:'4.1', title:'Phase 1 Action Plan', sub:'Immediate next steps (Years 1–3)', owner:'Freelancer (AI-assisted)', timing:'Week 17', desc:'Develop a detailed action plan for Phase 1 of the master plan: specific tasks, responsible parties, timelines, budget allocations, and decision points. This is the bridge between the long-range plan and day-to-day operations.', aiTask:'action-plan', aiLabel:'Draft Phase 1 Action Plan' },
+      { id:'4.2', title:'Fundraising Strategy', sub:'Align development with the master plan', owner:'Freelancer (AI-assisted)', timing:'Week 17–18', desc:'Identify the major fundraising initiatives needed to execute the master plan: capital campaign feasibility, major gift prospects, foundation grants, government funding, and naming opportunities. Outline a fundraising readiness assessment.', aiTask:'fundraising', aiLabel:'Draft Fundraising Strategy Framework' },
+      { id:'4.3', title:'Architect / Consultant RFQ', sub:'Identify when and how to engage design professionals', owner:'Freelancer + Mark', timing:'Week 18', desc:'Develop criteria for selecting an architect and other consultants for Phase 1 implementation. Draft a Request for Qualifications (RFQ). Outline the selection process and timeline for engaging the design team.', aiTask:'rfq', aiLabel:'Draft Architect RFQ' },
+      { id:'4.4', title:'Communication Plan', sub:'How the museum shares the master plan', owner:'Freelancer (AI-assisted)', timing:'Week 19', desc:'Develop a communication strategy for releasing the master plan publicly: board announcement, staff briefing, community presentation, press release, website update, and donor communication. Sequence and tone matter enormously.', aiTask:'comms', aiLabel:'Draft Communication Plan' },
+      { id:'4.5', title:'Final Delivery & Closeout', sub:'Deliver the complete master plan package', owner:'Freelancer + Mark', timing:'Week 20', desc:'Deliver all master plan documents: final plan document (Word + PDF), phasing diagrams, space program spreadsheet, cost estimate summary, and action plan. Conduct closeout call. Submit final invoice.', aiTask:'closeout', aiLabel:'Draft Closeout & Delivery Package' },
+    ]
+  }
+];
+
+// ── STATE HELPERS ──────────────────────────────────────
+function totalItems(){return PHASES.reduce((s,p)=>s+p.items.length,0);}
+function completedItems(){return Object.values(state.items).filter(v=>v.done).length;}
+function getItemState(id){return state.items[id]||(state.items[id]={done:false,notes:'',aiOutput:''});}
+function saveState(){try{localStorage.setItem('mpl_sp_state',JSON.stringify({museum,state}));}catch(e){}}
+function loadState(){
+  try{
+    const d=JSON.parse(localStorage.getItem('mpl_sp_state')||'null');
+    if(d&&d.museum&&d.museum.name){museum=d.museum;state=d.state;return true;}
+  }catch(e){}
+  return false;
+}
+
+// ── SETUP ─────────────────────────────────────────────
+function startProject(){
+  const name=document.getElementById('inp-name').value.trim();
+  if(!name){alert('Please enter a museum name.');return;}
+  museum={
+    name,
+    type:document.getElementById('inp-type').value||'Museum',
+    location:document.getElementById('inp-location').value||'',
+    budget:document.getElementById('inp-budget').value||'',
+    staff:document.getElementById('inp-staff').value||'',
+    vitality:document.getElementById('inp-vitality').value||'',
+    assignee:document.getElementById('inp-assignee').value||'Unassigned',
+  };
+  state={phase:0,items:{}};
+  saveState();
+  initApp();
+}
+
+// ── INIT APP ──────────────────────────────────────────
+function initApp(){
+  document.getElementById('museum-name-display').textContent=museum.name;
+  document.getElementById('sidebar-museum-block').style.display='block';
+  document.getElementById('sb-museum-name').textContent=museum.name;
+  document.getElementById('sb-museum-meta').textContent=`${museum.type} · ${museum.location}`;
+  // repopulate form fields so context is always visible
+  document.getElementById('inp-name').value=museum.name||'';
+  document.getElementById('inp-type').value=museum.type||'';
+  document.getElementById('inp-location').value=museum.location||'';
+  document.getElementById('inp-budget').value=museum.budget||'';
+  document.getElementById('inp-staff').value=museum.staff||'';
+  document.getElementById('inp-vitality').value=museum.vitality||'';
+  document.getElementById('inp-assignee').value=museum.assignee||'';
+  buildSidebar();
+  renderPhase(state.phase);
+  updateProgress();
+}
+
+// ── SIDEBAR ───────────────────────────────────────────
+function buildSidebar(){
+  const el=document.getElementById('sidebar-phases');
+  el.innerHTML='';
+  PHASES.forEach((ph,pi)=>{
+    const allDone=ph.items.every(it=>getItemState(it.id).done);
+    const isActive=pi===state.phase;
+    const div=document.createElement('div');
+    div.className=`phase-nav-item${isActive?' active':''}${allDone?' completed':''}`;
+    div.setAttribute('data-phase',pi);
+    div.innerHTML=`<span class="phase-num">${ph.num}</span><div>
+      <span class="phase-nav-title">${ph.title}</span>
+      <span class="phase-nav-sub">${ph.weeks}</span>
+    </div>`;
+    div.onclick=()=>renderPhase(pi);
+    el.appendChild(div);
+    // mini checks
+    ph.items.forEach(it=>{
+      const ist=getItemState(it.id);
+      const row=document.createElement('div');
+      row.className='phase-check-row';
+      row.innerHTML=`<div class="mini-check${ist.done?' done':''}"></div><span class="phase-check-label">${it.id} ${it.title}</span>`;
+      el.appendChild(row);
+    });
+  });
+}
+
+// ── RENDER PHASE ──────────────────────────────────────
+function renderPhase(pi){
+  state.phase=pi;
+  saveState();
+  // update sidebar
+  document.querySelectorAll('.phase-nav-item').forEach((el,i)=>{
+    el.classList.toggle('active',i===pi);
+  });
+  const ph=PHASES[pi];
+  const pc=document.getElementById('phase-content');
+  pc.style.display='flex';
+  const doneCount=ph.items.filter(it=>getItemState(it.id).done).length;
+  pc.innerHTML=`
+    <div class="phase-header fade-in">
+      <div class="phase-eyebrow">${ph.num} of ${PHASES.length}</div>
+      <h2 class="phase-title">${ph.title.replace(' & ',' <em>&</em> ')}</h2>
+      <p class="phase-desc">${ph.desc}</p>
+      <span class="week-badge">${ph.weeks} &nbsp;·&nbsp; ${doneCount}/${ph.items.length} complete</span>
+    </div>
+    <div id="items-container">
+      ${ph.items.map((it,ii)=>renderItem(it,ii===0&&!getItemState(it.id).done)).join('')}
+    </div>
+    <div class="phase-footer">
+      <button class="btn-phase-nav" onclick="renderPhase(${pi-1})" ${pi===0?'disabled':''}>← Previous Phase</button>
+      <span class="phase-progress-text">${doneCount} of ${ph.items.length} steps complete</span>
+      <button class="btn-phase-nav primary" onclick="renderPhase(${pi+1})" ${pi===PHASES.length-1?'disabled':''}>Next Phase →</button>
+    </div>
+  `;
+}
+
+function renderItem(it, expanded){
+  const ist=getItemState(it.id);
+  const cls=ist.done?'item-done':(expanded?'item-active':'');
+  const expCls=expanded&&!ist.done?' item-expanded':'';
+  return `<div class="checklist-item ${cls}${expCls} fade-in" id="item-${it.id.replace('.','_')}">
+    <div class="item-header" onclick="toggleItem('${it.id}')">
+      <span class="item-number">${it.id}</span>
+      <div class="item-title-wrap">
+        <span class="item-title">${it.title}</span>
+        <span class="item-subtitle">${it.sub}</span>
+      </div>
+      <div class="item-status">
+        <div class="status-dot"></div>
+        <span class="status-text">${ist.done?'Complete':expanded?'In Progress':'Pending'}</span>
+        <span class="item-chevron">▼</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-description">${it.desc}</p>
+      <div class="item-owner-row">
+        <div class="item-owner"><span>Owner: </span><span>${it.owner}</span></div>
+        <div class="item-owner"><span>Timing: </span><span>${it.timing}</span></div>
+      </div>
+      <div class="notes-label">Your Notes</div>
+      <textarea class="notes-input" id="notes-${it.id.replace('.','_')}" 
+        placeholder="Add context, data, or observations for this step..."
+        onchange="saveNotes('${it.id}',this.value)">${ist.notes||''}</textarea>
+      <div class="ai-section">
+        <div class="ai-section-label">AI Assistant — ${it.aiLabel}</div>
+        <div class="ai-output ${ist.aiOutput?'':'empty'}" id="ai-out-${it.id.replace('.','_')}">
+          ${ist.aiOutput||'Click the button below to generate AI assistance for this step.'}
+        </div>
+      </div>
+      <div class="item-actions">
+        <button class="btn-ai" id="btn-ai-${it.id.replace('.','_')}" onclick="runAI('${it.id}')">
+          <span class="btn-ai-inner">✦ ${it.aiLabel}</span>
+        </button>
+        ${ist.done
+          ? `<button class="btn-redo" onclick="undoItem('${it.id}')">↩ Mark Incomplete</button>`
+          : `<button class="btn-complete" onclick="completeItem('${it.id}')">✓ Mark Complete</button>`
+        }
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleItem(id){
+  const el=document.getElementById(`item-${id.replace('.','_')}`);
+  if(!el) return;
+  el.classList.toggle('item-expanded');
+  if(el.classList.contains('item-expanded')) el.classList.add('item-active');
+}
+
+function saveNotes(id,val){
+  getItemState(id).notes=val;
+  saveState();
+}
+
+function completeItem(id){
+  getItemState(id).done=true;
+  saveState();
+  updateProgress();
+  buildSidebar();
+  renderPhase(state.phase);
+}
+
+function undoItem(id){
+  getItemState(id).done=false;
+  saveState();
+  updateProgress();
+  buildSidebar();
+  renderPhase(state.phase);
+}
+
+function updateProgress(){
+  const pct=totalItems()>0?(completedItems()/totalItems()*100):0;
+  document.getElementById('progress-fill').style.width=pct+'%';
+}
+
+// ── AI CALLS ──────────────────────────────────────────
+
+function buildPrompt(task, itemId){
+  const ph=PHASES.find(p=>p.items.find(i=>i.id===itemId));
+  const it=ph?ph.items.find(i=>i.id===itemId):null;
+  const notes=getItemState(itemId).notes||'';
+  const ctx=`Museum: ${museum.name}\nType: ${museum.type}\nLocation: ${museum.location}\nBudget: ${museum.budget}\nStaff: ${museum.staff}\nVitality/Context: ${museum.vitality||'Not provided'}\nConsultant Notes: ${notes||'None'}`;
+  const prompts={
+    'kickoff':`You are a museum master planning consultant. Create a detailed agenda for a 90-minute master plan project kickoff meeting.\n\n${ctx}\n\nInclude: project overview, planning horizon discussion, scope confirmation, assessment process walkthrough, stakeholder engagement plan, timeline, and decision-making protocol. Professional, practical tone.`,
+    'facilities':`You are a museum master planning consultant. Create a comprehensive facilities assessment template for a museum master plan.\n\n${ctx}\n\nOrganize by building system: exterior envelope (roof, facade, windows), structural systems, HVAC, electrical, plumbing, fire suppression, technology infrastructure, ADA compliance, building security, and collections environment. For each system: current condition rating (Good/Fair/Poor), estimated remaining useful life, deferred maintenance cost, and master plan implication.`,
+    'collections':`You are a museum master planning consultant. Draft a collections and storage assessment framework for a museum master plan.\n\n${ctx}\n\nAddress: current storage square footage, environmental conditions (temp, humidity, UV), current utilization rate (% of capacity), annual acquisitions rate, collection growth projection (10 and 20 years), conservation emergency inventory, and future storage needs calculation. Include a collections growth projection model.`,
+    'operations':`You are a museum master planning consultant. Create an operational analysis framework for a museum master plan.\n\n${ctx}\n\nMap the following workflows: visitor arrival and ticketing, gallery circulation, group and school visit processing, collections movement (loading dock to storage to gallery), staff circulation and work areas, catering and event operations, and security monitoring. For each: identify current inefficiencies and master plan improvement opportunities.`,
+    'audience':`You are a museum master planning consultant. Draft an audience and community analysis for this museum master plan.\n\n${ctx}\n\nAddress: current visitor demographics (age, origin, frequency), market area population and trends, school district relationships and capacity, underserved community identification, tourism visitor profile, community perception of the museum, and projected audience growth scenarios tied to master plan programming.`,
+    'benchmarking':`You are a museum master planning consultant. Create a peer institution benchmarking report framework for a museum master plan.\n\n${ctx}\n\nFor each comparable institution: name, type, location, size (sq ft), budget, endowment, attendance, recent master plan or expansion summary, capital cost, fundraising approach, and 2-3 specific lessons applicable to this project. Recommend 5 institutions to research.`,
+    'assessment-report':`You are a museum master planning consultant. Draft a Phase 1 Assessment Report for this museum master plan.\n\n${ctx}\n\nSections: executive summary, facilities condition summary, collections and storage assessment, operational analysis findings, audience and community profile, peer institution insights, and key planning implications. This report requires board approval before the visioning phase begins.`,
+    'vision-workshop':`You are a museum master planning consultant. Create a half-day board vision workshop facilitation guide for this museum master plan.\n\n${ctx}\n\nStructure: grounding exercise — where are we today (20 min), small group futures exercise — where do we want to be in 20 years (40 min), reporting out and theme identification (30 min), drafting planning principles (30 min), and next steps (10 min). Include specific facilitation prompts and exercises.`,
+    'community-vision':`You are a museum master planning consultant. Create facilitation guides for staff and community vision sessions for this museum master plan.\n\n${ctx}\n\nStaff session (90 min): operational improvements, programmatic aspirations, and workplace needs. Community session (2 hrs): community perception of the museum, unmet needs, and hopes for the future. For each: warm-up activity, discussion prompts, synthesis exercise, and documentation approach.`,
+    'space-program':`You are a museum master planning consultant. Draft a space needs program for this museum master plan.\n\n${ctx}\n\nFor each functional area: space name, current square footage, current utilization notes, projected future need (with rationale), and priority (Essential/Important/Desirable). Categories: public galleries, temporary exhibitions, education spaces, public amenities (lobby, food, retail, restrooms), collections storage, conservation lab, administrative offices, loading and support. Include total current vs. future comparison.`,
+    'site-analysis':`You are a museum master planning consultant. Draft a site analysis summary for this museum master plan.\n\n${ctx}\n\nAddress: site boundaries and ownership, adjacent properties and acquisition potential, zoning regulations and allowable uses, setback requirements, parking requirements and current supply, utility infrastructure capacity, historic preservation constraints, environmental considerations, and preliminary expansion potential assessment.`,
+    'scenarios':`You are a museum master planning consultant. Draft 3 planning scenarios for this museum master plan.\n\n${ctx}\n\nFor each scenario: name, description, how it addresses the space program, phasing approach, estimated square footage added, rough cost range, fundraising implications, operational impact during construction, and pros and cons. Make the scenarios genuinely different in approach, not just scale.`,
+    'scenario-selection':`You are a museum master planning consultant. Create a scenario comparison presentation for board selection.\n\n${ctx}\n\nFor each scenario: visual summary (space diagram description), how it addresses key planning needs, 5-year, 10-year and 20-year phasing, total cost estimate, fundraising requirement, risk profile, and recommendation. Include a decision framework to help the board choose.`,
+    'conceptual-design':`You are a museum master planning consultant. Draft a conceptual design narrative for the preferred master plan scenario.\n\n${ctx}\n\nDescribe: how the campus or building will be organized spatially, the visitor arrival and orientation experience, relationship between new and existing spaces, collections storage location and access, staff and operational circulation, and how the design reflects the institution's mission and community identity.`,
+    'phasing':`You are a museum master planning consultant. Draft a phasing strategy for this museum master plan.\n\n${ctx}\n\nFor each phase: phase name, primary scope, square footage, what visitor experience or operational problem it solves, estimated duration, estimated cost range, fundraising strategy, interim operations impact, and go/no-go decision criteria. Ensure each phase is independently functional and fundable. Typically 3-5 phases.`,
+    'cost-estimate':`You are a museum master planning consultant. Draft a capital cost estimating framework for this museum master plan.\n\n${ctx}\n\nCost categories: site acquisition or preparation, construction (use current $/sq ft benchmarks for museum renovation and new construction), exhibition development (allowance per sq ft of gallery), FF&E, technology infrastructure, soft costs (architecture, engineering, project management — typically 20-25% of construction), and contingency (15-20%). Present costs by phase.`,
+    'sustainability':`You are a museum master planning consultant. Draft a sustainability and resilience strategy for this museum master plan.\n\n${ctx}\n\nAddress: energy efficiency targets, renewable energy potential (solar, geothermal), LEED or equivalent certification goal, stormwater management, climate resilience (flood, heat, extreme weather), material specification principles, collections environment sustainability, and how sustainability goals integrate with each phase.`,
+    'financial':`You are a museum master planning consultant. Draft a financial feasibility framework for this museum master plan.\n\n${ctx}\n\nAddress: current financial health (endowment, reserves, operating surplus/deficit), fundraising capacity assessment (track record, donor base, major gift potential), foundation and government funding landscape, naming opportunity inventory, revenue impact of expansion (new earned revenue streams), and operating cost implications of additional square footage.`,
+    'full-draft':`You are a museum master planning consultant. Draft the outline and key sections of this museum master plan document.\n\n${ctx}\n\nWrite: 1) Complete table of contents, 2) Executive Summary (400-500 words), 3) Planning Process and Methodology section (200 words), 4) Vision and Planning Principles section (with the vision statement and 5 planning principles with brief rationale). Use aspirational but grounded language.`,
+    'review':`You are a museum master planning consultant. Create a board presentation outline for the master plan approval.\n\n${ctx}\n\nStructure: journey recap — how we got here (5 min), assessment highlights (10 min), vision and planning principles (10 min), preferred scenario and phasing (20 min), financial framework (15 min), immediate next steps (10 min), formal approval request (5 min). Include Q&A preparation notes for likely board questions.`,
+    'action-plan':`You are a museum master planning consultant. Draft a Phase 1 Action Plan for this museum master plan.\n\n${ctx}\n\nFor each action item: task description, responsible party (by role), timeline, budget allocation, dependencies, and success metric. Categories: governance and planning committee formation, architect selection, capital campaign feasibility study, site due diligence, community engagement, and interim operations improvements.`,
+    'fundraising':`You are a museum master planning consultant. Draft a fundraising strategy framework for this museum master plan.\n\n${ctx}\n\nAddress: total fundraising requirement by phase, capital campaign readiness assessment (leadership, donor pipeline, case for support), major gift strategy, foundation and government grants, federal historic preservation tax credits or other incentives, naming opportunities with suggested gift levels, and campaign timeline relative to construction.`,
+    'rfq':`You are a museum master planning consultant. Draft an architect Request for Qualifications (RFQ) for Phase 1 of this museum master plan.\n\n${ctx}\n\nRFQ sections: project overview, scope of architectural services, museum-specific experience required, team composition requirements, submission requirements (qualifications, relevant projects, project approach, fees), evaluation criteria, timeline, and interview process.`,
+    'comms':`You are a museum master planning consultant. Draft a communication plan for releasing this museum master plan.\n\n${ctx}\n\nAudiences and messages: board and staff (internal memo, tone of accomplishment and next steps), major donors (personal outreach from board chair, focus on vision and impact), community stakeholders (community meeting or open house), general public (press release and website), and media (press kit). Include suggested sequencing and timing.`,
+    'closeout':`You are a museum master planning consultant. Draft a closeout and delivery package for this museum master plan.\n\n${ctx}\n\nDeliverables checklist: final master plan document (Word + PDF), phasing diagrams, space program spreadsheet, cost estimate summary by phase, action plan (Excel), site analysis summary, and all supporting research. Also draft a closeout email and internal lessons-learned memo.`,
+  };
+  return prompts[task]||`You are a museum master planning consultant working on a master plan for ${museum.name}. ${notes?'Consultant notes: '+notes+' ':''} Please provide professional guidance for this step of the master planning process.`;
+}
+
+async function runAI(id){
+  const el=PHASES.flatMap(p=>p.items).find(i=>i.id===id);
+  if(!el) return;
+  const btnId=`btn-ai-${id.replace('.','_')}`;
+  const outId=`ai-out-${id.replace('.','_')}`;
+  const btn=document.getElementById(btnId);
+  const out=document.getElementById(outId);
+  if(!btn||!out) return;
+
+  btn.disabled=true;
+  btn.innerHTML=`<span class="spinner"></span> Generating...`;
+  out.className='ai-output loading';
+  out.textContent='Generating AI assistance — this takes 10–20 seconds...';
+
+  try{
+    const prompt=buildPrompt(el.aiTask, id);
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'You are an expert museum planning consultant with 20+ years of experience. You follow the Museum Planning LLC methodology developed by Mark Walhimer, author of Museums 101 and Designing Museum Experiences. You produce professional, actionable, and specific outputs tailored to each museum\'s context. Be direct and practical.',
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content?.map(c=>c.text||'').join('')||'No response generated.';
+    getItemState(id).aiOutput=text;
+    saveState();
+    out.className='ai-output fade-in';
+    out.textContent=text;
+  }catch(err){
+    out.className='ai-output';
+    out.textContent='Error connecting to AI. Check your connection and try again.';
+  }
+  btn.disabled=false;
+  btn.innerHTML=`✦ Regenerate`;
+}
+
+// ── EXPORT ────────────────────────────────────────────
+function exportSummary(){
+  const done=completedItems();
+  const total=totalItems();
+  let txt=`MUSEUM STRATEGIC PLAN — PROJECT SUMMARY\n`;
+  txt+=`Museum Planning LLC\n`;
+  txt+=`${'='.repeat(50)}\n\n`;
+  txt+=`Museum: ${museum.name}\n`;
+  txt+=`Type: ${museum.type}\n`;
+  txt+=`Location: ${museum.location}\n`;
+  txt+=`Budget: ${museum.budget}\n`;
+  txt+=`Staff: ${museum.staff}\n`;
+  txt+=`Assigned To: ${museum.assignee}\n`;
+  txt+=`Progress: ${done}/${total} steps complete (${Math.round(done/total*100)}%)\n\n`;
+
+  PHASES.forEach(ph=>{
+    txt+=`\n${'─'.repeat(50)}\n${ph.num}: ${ph.title.toUpperCase()}\n${'─'.repeat(50)}\n`;
+    ph.items.forEach(it=>{
+      const ist=getItemState(it.id);
+      txt+=`\n[${ist.done?'✓':' '}] ${it.id} — ${it.title}\n`;
+      if(ist.notes) txt+=`  Notes: ${ist.notes}\n`;
+      if(ist.aiOutput) txt+=`\n  AI Output:\n  ${ist.aiOutput.replace(/\n/g,'\n  ')}\n`;
+    });
+  });
+
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`${museum.name.replace(/\s+/g,'-')}-Strategic-Plan-Summary.txt`;
+  a.click();
+}
+
+// ── INIT ──────────────────────────────────────────────
+if(loadState()&&museum.name){
+  initApp();
+}
+</script>
+</body>
+</html>
